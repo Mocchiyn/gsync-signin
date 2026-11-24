@@ -1,0 +1,48 @@
+<!doctype html>
+<html lang="zh-CN">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="referrer" content="no-referrer">
+<title>GSync · 返回 Obsidian</title>
+<style>
+body { font: 1rem system-ui; line-height: 1.6; margin: 3rem auto; max-width: 32rem; padding: 0 1.25rem; color-scheme: light dark; }
+a { display: inline-block; padding: .6rem 1rem; background: #5936a8; color: white; border-radius: .4rem; }
+a[hidden] { display: none; }
+</style>
+<h1>GSync 登录</h1>
+<p id="status">请从 Obsidian 的 GSync 设置开始登录。</p>
+<a id="open" hidden>打开 Obsidian</a>
+<script>
+const received = new URLSearchParams(location.search);
+const code = received.get("code");
+const error = received.get("error");
+const state = received.get("state") || "";
+history.replaceState(null, "", location.pathname);
+
+if (code || error) {
+  const params = new URLSearchParams();
+  const separator = state.indexOf("~");
+  if (separator !== -1) {
+    const encodedVault = state.slice(separator + 1).replace(/-/g, "+").replace(/_/g, "/");
+    try {
+      const bytes = Uint8Array.from(atob(encodedVault), character => character.charCodeAt(0));
+      const vault = new TextDecoder().decode(bytes);
+      if (vault) params.set("vault", vault);
+    } catch {
+      // Obsidian can choose the vault when the optional name cannot be decoded.
+    }
+  }
+  if (code) params.set("code", code);
+  if (error) params.set("error", error);
+  if (state) params.set("state", state);
+  const target = "obsidian://gsync-auth?" + params.toString();
+  const link = document.getElementById("open");
+  link.href = target;
+  link.hidden = false;
+  document.getElementById("status").textContent = error
+    ? "Google 登录未完成。请返回 Obsidian 重试。"
+    : "如果 Obsidian 没有自动打开，请点下面的按钮。";
+  location.href = target;
+}
+</script>
+</html>
